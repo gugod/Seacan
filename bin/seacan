@@ -1,0 +1,59 @@
+#!/usr/bin/env perl
+use v5.14;
+use strict;
+use warnings;
+use Data::Dumper;
+
+package App::Seacan {
+    use Mo qw<required coerce>;
+    use File::Path qw<make_path>;
+    use TOML qw<from_toml>;
+
+    sub join_path { join "/", @_ };
+
+    has config => (
+        required => 1,
+        coerce => sub {
+            my $c = $_[0];
+            if (!ref($c) && -f $c) {
+                open(my $fh, "<:utf8", $c) or die $!;
+                local $/ = undef;
+                return from_toml( scalar <$fh> );
+            }
+            return $c;
+        }
+    );
+
+    sub make_paths {
+        my $self = shift;
+        make_path( $self->config->{output} );
+    }
+
+    sub install_perl {
+        my $self = shift;
+        my $perlbrew_root_path = join_path($self->config->{seacan}{output}, "perlbrew");
+        make_path( $perlbrew_root_path ) unless -d $perlbrew_root_path;
+
+        for (keys %ENV) {
+            delete $ENV{$_} if /\APERLBREW_/;
+        }
+        delete $ENV{PERL_CPANM_OPT};
+        delete $ENV{PERL_LOCAL_LIB_ROOT};
+        delete $ENV{PERL_MB_OPT};
+        delete $ENV{PERL_MM_OPT};
+
+        $ENV{PERLBREW_ROOT} = $perlbrew_root_path;
+        system("curl -kL http://install.perlbrew.pl | bash") == 0 or die $!;
+        my $perlbrew_command = join_path($perlbrew_root_path, "bin", "perlbrew");
+        system($perlbrew_command, "install", $self->config->{perl}{version}) == 0 or die $!;
+    }
+
+    sub run {
+        my $self = shift;
+        $self->install_perl;
+    }
+};
+
+package main;
+my $config = shift @ARGV;
+App::Seacan->new( config => $config )->run;
