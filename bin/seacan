@@ -18,20 +18,40 @@ package App::Seacan {
             if (!ref($c) && -f $c) {
                 open(my $fh, "<:utf8", $c) or die $!;
                 local $/ = undef;
-                return from_toml( scalar <$fh> );
+                $c = from_toml( scalar <$fh> );
             }
+            $c->{perl}{installed_as} //= "seacan";
+
             return $c;
         }
     );
 
-    sub make_paths {
+    sub seacan_perlbrew_root {
         my $self = shift;
-        make_path( $self->config->{output} );
+        return join_path($self->config->{seacan}{output}, "perlbrew");
+    }
+
+    sub seacan_perl {
+        my $self = shift;
+        return join_path( $self->seacan_perlbrew_root, "perls", $self->config->{perl}{installed_as}, "bin", "perl" );
+    }
+
+    sub perl_is_installed {
+        my $self = shift;
+        my $perlbrew_root_path = join_path($self->config->{seacan}{output}, "perlbrew");
+        return 0 unless -d $perlbrew_root_path;
+        my $perl_executable = join_path($perlbrew_root_path, "perls", $self->config->{perl}{installed_as}, "bin", "perl");
+        if (my $r = -f $perl_executable) {
+            say STDERR "perl is installed: $perl_executable";
+            return 1;
+        }
+        return 0;
     }
 
     sub install_perl {
         my $self = shift;
-        my $perlbrew_root_path = join_path($self->config->{seacan}{output}, "perlbrew");
+
+        my $perlbrew_root_path = $self->seacan_perlbrew_root;
         make_path( $perlbrew_root_path ) unless -d $perlbrew_root_path;
 
         for (keys %ENV) {
@@ -41,16 +61,29 @@ package App::Seacan {
         delete $ENV{PERL_LOCAL_LIB_ROOT};
         delete $ENV{PERL_MB_OPT};
         delete $ENV{PERL_MM_OPT};
+        delete $ENV{PERL5LIB};
 
         $ENV{PERLBREW_ROOT} = $perlbrew_root_path;
+
         system("curl -kL http://install.perlbrew.pl | bash") == 0 or die $!;
         my $perlbrew_command = join_path($perlbrew_root_path, "bin", "perlbrew");
-        system($perlbrew_command, "install", $self->config->{perl}{version}) == 0 or die $!;
+        system($perlbrew_command, "install", $self->config->{perl}{version}, "--as", $self->config->{perl}{installed_as}) == 0 or die $!;
+        system($perlbrew_command, "install-cpanm", "--force");
+    }
+
+    sub install_cpan {
+        my $self = shift;
+        my $cpanm_command = join_path( $self->seacan_perlbrew_root, "bin", "cpanm");
+        my $perl_command = $self->seacan_perl;
+
+        $, = " ";
+        system($perl_command, $cpanm_command, "--notest", "-L", join_path($self->config->{seacan}{output}, "local"), "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
     }
 
     sub run {
         my $self = shift;
-        $self->install_perl;
+        $self->install_perl unless $self->perl_is_installed;
+        $self->install_cpan;
     }
 };
 
