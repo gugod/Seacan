@@ -80,10 +80,22 @@ package App::Seacan {
         system($perl_command, $cpanm_command, "--notest", "-L", join_path($self->config->{seacan}{output}, "local"), "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
     }
 
+    sub copy_app {
+        my $self = shift;
+        my $target_directory = join_path($self->config->{seacan}{output}, "app");
+        my $source_directory = $self->config->{seacan}{app};
+
+        make_path($target_directory);
+        $source_directory =~ s{/+$}{};
+
+        system("rsync", "-8vPa", $source_directory, $target_directory) == 0 or die;
+    }
+
     sub run {
         my $self = shift;
         $self->install_perl unless $self->perl_is_installed;
         $self->install_cpan;
+        $self->copy_app;
     }
 };
 
