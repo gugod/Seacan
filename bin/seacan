@@ -91,6 +91,24 @@ package App::Seacan {
         system("rsync", "-8vPa", $source_directory, $target_directory) == 0 or die;
     }
 
+	sub create_launcher {
+        my $self = shift;
+		my $output = $self->config->{seacan}{output};
+        my $target_directory = join_path($output, 'app', 'bin');
+		# This is a hack to determine the application name
+		# Maybe the application name could be part of the configuration
+		my $app_name = $output;
+		$app_name = s/.+?\/*(.+)$/$1/;
+		my $launcher = join_path($target_directory, $app_name);
+		make_path($target_directory);
+		open(my $fh, ">:utf8", $launcher) or die $!;
+		print $fh "#!/bin/env bash\n";
+		print $fh "PERL5LIB=$output/local/lib/perl5\n";
+		print $fh "export PERL5LIB\n";
+		# This shouldn't be hardcoded and be part of the config
+		print $fh "$output/perlbrew/perls/seacan-perl/bin/perl $output/app/$app_name/bin/app.pl\n";
+	}
+
     sub run {
         my $self = shift;
         $self->install_perl unless $self->perl_is_installed;
