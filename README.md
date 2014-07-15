@@ -30,6 +30,9 @@ Directory Layout
   - local/
   - app/CoffeeChair
 
-Afterward, invoking commands like this:
+Afterwards, invoking commands like this:
 
     PERL5LIB=/opt/Coffeechair/local/lib/perl5 /opt/CoffeeChair/perlbrew/perls/seacan-perl/bin/perl /opt/CoffeeChair/app/CoffeeChair/bin/app.pl
+
+Additionally, a launcher script with the aforementioned command was created on:
+ - /opt/CoffeeChair/bin/CoffeeChair
