@@ -21,7 +21,7 @@ configure_args = "-Dusethreads"
 
 Build it
 
-    seacan build --config myapp_seacan.toml
+    seacan myapp_seacan.toml
 
 Directory Layout
 
