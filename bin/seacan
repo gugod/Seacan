@@ -125,7 +125,7 @@ package App::Seacan {
 	print $fh "export PERL5LIB\n";
 	# String "app" shouldn't be hardcoded and be part of the config
 	# app.pl will not be the likely name of the main script.
-	print $fh "$output/perlbrew/perls/seacan/bin/perl $output/app/$app_name/bin/$app_name\n";
+	print $fh "$output/perlbrew/perls/seacan/bin/perl $output/app/$app_name/bin/$app_name \$@\n";
 	close $fh or die($!);
 	chmod(0755, $launcher) or die($!);
    }
