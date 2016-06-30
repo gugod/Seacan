@@ -100,14 +100,18 @@ package App::Seacan {
 
     	my $self = shift;
 	my $output = $self->config->{seacan}{output};
-	
+
 	# The launcher script goes into bin of the target directory
         my $target_directory = join_path($output, 'bin');
 
-	# This is a hack to determine the application name from the
-	# output value of the config
-	my $app_name = $output;
-	$app_name =~ s/^.+\/(.+?)$/$1/;
+	my $app_name = $self->config->{seacan}{app_name};
+        if ( !$app_name ) {
+            # This is a hack to determine the application name from the
+            # output value of the config in case it wasn't provided
+
+            $app_name = $output;
+            $app_name =~ s/^.+\/(.+?)$/$1/;
+        }
 
 	# Apps following the CPAN guidelines have a lib directory with the
 	# modules. Adding this to the PERL5LIB allows to run this distributions
@@ -121,7 +125,7 @@ package App::Seacan {
 	print $fh "export PERL5LIB\n";
 	# String "app" shouldn't be hardcoded and be part of the config
 	# app.pl will not be the likely name of the main script.
-	print $fh "$output/perlbrew/perls/seacan/bin/perl $output/app/$app_name/bin/app.pl\n";
+	print $fh "$output/perlbrew/perls/seacan/bin/perl $output/app/$app_name/bin/$app_name\n";
 	close $fh or die($!);
 	chmod(0755, $launcher) or die($!);
    }
