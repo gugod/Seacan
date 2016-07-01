@@ -65,7 +65,7 @@ package App::Seacan {
 
         $ENV{PERLBREW_ROOT} = $perlbrew_root_path;
 
-        system("curl -kL http://install.perlbrew.pl | bash") == 0 or die $!;
+        system("curl -L https://install.perlbrew.pl | bash") == 0 or die $!;
         my $perlbrew_command = join_path($perlbrew_root_path, "bin", "perlbrew");
         system($perlbrew_command, "install", $self->config->{perl}{version}, "--as", $self->config->{perl}{installed_as}) == 0 or die $!;
         system($perlbrew_command, "install-cpanm", "--force");
