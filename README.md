@@ -12,6 +12,7 @@ Prepare a configuration file.
 [seacan]
 output = "/opt/CoffeeChair"
 app = "/src/CoffeeChair"
+app_name = "CoffeeChair.pl"
 
 [perl]
 version = "5.20.0"
