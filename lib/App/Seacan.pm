@@ -97,11 +97,16 @@ sub install_cpan {
 
 sub copy_app {
     my $self = shift;
-    my $target_directory = join_path($self->config->{seacan}{output}, "app");
+    my $target_directory = join_path($self->config->{seacan}{output}, "app", $self->config->{seacan}{app_name});
     my $source_directory = $self->config->{seacan}{app};
 
     make_path($target_directory);
-    $source_directory =~ s{/+$}{};
+
+    unless ( $source_directory =~ m{/$} ) {
+        # this is telling rsync to copy the contents of $source_directory
+        # instead of $source_directory itself
+        $source_directory .= "/";
+    }
 
     system("rsync", "-8vPa", $source_directory, $target_directory) == 0 or die;
 }
