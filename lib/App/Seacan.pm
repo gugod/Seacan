@@ -67,7 +67,22 @@ sub install_perl {
 
     system("curl -L https://install.perlbrew.pl | bash") == 0 or die $!;
     my $perlbrew_command = join_path($perlbrew_root_path, "bin", "perlbrew");
-    system($perlbrew_command, "install", $self->config->{perl}{version}, "--as", $self->config->{perl}{installed_as}) == 0 or die $!;
+
+    my @perl_install_cmd = (
+        $perlbrew_command,
+        "install", $self->config->{perl}{version},
+        "--as",    $self->config->{perl}{installed_as},
+
+        $self->config->{perl}{notest}
+            ? ("--notest")
+            : (),
+
+        $self->config->{perl}{parallel}
+            ? ("-j", $self->config->{perl}{parallel})
+            : (),
+    );
+    system(@perl_install_cmd) == 0 or die $!;
+
     system($perlbrew_command, "install-cpanm", "--force");
 }
 
