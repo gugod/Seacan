@@ -1,5 +1,10 @@
 package App::Seacan;
 
+# Semantic Vesioning: http://semver.org/
+# Not sure if I want to use v-string, but I do want to follow
+# semvar as a convention.
+our $VERSION = "0.1.0";
+
 use Mo qw<required coerce>;
 use File::Path qw<make_path>;
 use TOML qw<from_toml>;
