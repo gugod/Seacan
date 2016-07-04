@@ -88,6 +88,8 @@ sub install_perl {
     system(@perl_install_cmd) == 0 or die $!;
 
     system($perlbrew_command, "install-cpanm", "--force");
+
+    system($perlbrew_command, "clean");
 }
 
 sub install_cpan {
