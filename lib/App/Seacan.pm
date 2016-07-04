@@ -140,16 +140,16 @@ sub create_launcher {
     # Apps following the CPAN guidelines have a lib directory with the
     # modules. Adding this to the PERL5LIB allows to run this distributions
     # without installing them.
-    my $app_lib =  join_path($output, 'app', $app_name, 'lib');
     my $launcher = join_path($target_directory, $app_name);
     make_path($target_directory);
     open(my $fh, ">:utf8", $launcher) or die $!;
     print $fh "#!/bin/bash\n";
-    print $fh "PERL5LIB=$output/local/lib/perl5:$app_lib\n";
+    print $fh 'CURRDIR=$(realpath "$(dirname ${BASH_SOURCE[0]})")', "\n";
+    print $fh "PERL5LIB=\$CURRDIR/../local/lib/perl5:\$CURRDIR/../app/$app_name/lib\n";
     print $fh "export PERL5LIB\n";
     # String "app" shouldn't be hardcoded and be part of the config
     # app.pl will not be the likely name of the main script.
-    print $fh "$output/perlbrew/perls/seacan/bin/perl $output/app/$app_name/bin/$app_name \$@\n";
+    print $fh "\$CURRDIR/../perlbrew/perls/seacan/bin/perl \$CURRDIR/../app/$app_name/bin/$app_name \$@\n";
     close $fh or die($!);
     chmod(0755, $launcher) or die($!);
 }
