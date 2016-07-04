@@ -67,7 +67,26 @@ sub install_perl {
 
     system("curl -L https://install.perlbrew.pl | bash") == 0 or die $!;
     my $perlbrew_command = join_path($perlbrew_root_path, "bin", "perlbrew");
-    system($perlbrew_command, "install", $self->config->{perl}{version}, "--as", $self->config->{perl}{installed_as}) == 0 or die $!;
+
+    my @perl_install_cmd = (
+        $perlbrew_command,
+        "install", $self->config->{perl}{version},
+        "--as",    $self->config->{perl}{installed_as},
+
+        $self->config->{perl}{noman}
+            ? ("--noman")
+            : (),
+
+        $self->config->{perl}{notest}
+            ? ("--notest")
+            : (),
+
+        $self->config->{perl}{parallel}
+            ? ("-j", $self->config->{perl}{parallel})
+            : (),
+    );
+    system(@perl_install_cmd) == 0 or die $!;
+
     system($perlbrew_command, "install-cpanm", "--force");
 }
 
@@ -82,11 +101,16 @@ sub install_cpan {
 
 sub copy_app {
     my $self = shift;
-    my $target_directory = join_path($self->config->{seacan}{output}, "app");
+    my $target_directory = join_path($self->config->{seacan}{output}, "app", $self->config->{seacan}{app_name});
     my $source_directory = $self->config->{seacan}{app};
 
     make_path($target_directory);
-    $source_directory =~ s{/+$}{};
+
+    unless ( $source_directory =~ m{/$} ) {
+        # this is telling rsync to copy the contents of $source_directory
+        # instead of $source_directory itself
+        $source_directory .= "/";
+    }
 
     system("rsync", "-8vPa", $source_directory, $target_directory) == 0 or die;
 }
