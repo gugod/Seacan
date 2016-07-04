@@ -73,6 +73,10 @@ sub install_perl {
         "install", $self->config->{perl}{version},
         "--as",    $self->config->{perl}{installed_as},
 
+        $self->config->{perl}{noman}
+            ? ("--noman")
+            : (),
+
         $self->config->{perl}{notest}
             ? ("--notest")
             : (),
