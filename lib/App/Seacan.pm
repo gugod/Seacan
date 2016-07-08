@@ -150,7 +150,7 @@ sub create_launcher {
     make_path($target_directory);
     open(my $fh, ">:utf8", $launcher) or die $!;
     print $fh "#!/bin/bash\n";
-    print $fh 'CURRDIR=$(realpath "$(dirname ${BASH_SOURCE[0]})")', "\n";
+    print $fh 'CURRDIR=$(dirname $(readlink -f $0))', "\n";
     print $fh "PERL5LIB=\$CURRDIR/../local/lib/perl5:\$CURRDIR/../app/$app_name/lib\n";
     print $fh "export PERL5LIB\n";
     # String "app" shouldn't be hardcoded and be part of the config
