@@ -8,6 +8,7 @@ package App::Seacan {
     use Mo qw<required coerce>;
     use File::Path qw<make_path>;
     use TOML qw<from_toml>;
+    use File::Basename;
 
     sub join_path { join "/", @_ };
 
@@ -76,19 +77,51 @@ package App::Seacan {
         my $cpanm_command = join_path( $self->seacan_perlbrew_root, "bin", "cpanm");
         my $perl_command = $self->seacan_perl;
 
+        my $dest = join_path(
+            $self->config->{seacan}{output},
+            "app",
+            File::Basename::basename( $self->config->{seacan}{app} ) =~ s{\.git$}{}r
+        );
+
         $, = " ";
-        system($perl_command, $cpanm_command, "--notest", "-L", join_path($self->config->{seacan}{output}, "local"), "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
+        system(
+            $perl_command, $cpanm_command, "--notest", "-L",
+            join_path($self->config->{seacan}{output}, "local"), "--installdeps", $dest
+        ) == 0 or die $!;
+    }
+
+    sub check_config {
+        my $self = shift;
+        my $conf_seacan = $self->config->{seacan};
+        my $conf_perl   = $self->config->{perl};
+
+        $conf_perl->{version} or die "conf <perl> must contain 'version'\n";
+
+        $conf_seacan->{output} or die "conf <seacan> must contain 'output'\n";
+
+        $conf_seacan->{app_name} or die "conf <seacan> must contain 'app_name'\n";
+
+        $conf_seacan->{app}
+            or die "conf <seacan> must contain 'app'\n";
     }
 
     sub copy_app {
         my $self = shift;
         my $target_directory = join_path($self->config->{seacan}{output}, "app");
-        my $source_directory = $self->config->{seacan}{app};
-
         make_path($target_directory);
-        $source_directory =~ s{/+$}{};
 
-        system("rsync", "-8vPa", $source_directory, $target_directory) == 0 or die;
+        my $source = $self->config->{seacan}{app};
+        $source =~ s{/+$}{};
+
+        my $git = File::Basename::basename($source) =~ s{\.git$}{}r;
+
+        if ( $git ) {
+            system("git clone $source $target_directory/$git");
+            return;
+        }
+
+        # else
+        system("rsync", "-8vPa", $source, $target_directory) == 0 or die;
     }
 
     sub create_launcher {
@@ -132,9 +165,10 @@ package App::Seacan {
 
     sub run {
         my $self = shift;
+        $self->check_config;
+        $self->copy_app;
         $self->install_perl unless $self->perl_is_installed;
         $self->install_cpan;
-        $self->copy_app;
 	$self->create_launcher;
     }
 };

@@ -20,6 +20,9 @@ configure_args = "-Dusethreads"
 
 ```
 
+Alternatively, app can point to a git repo URL.
+
+
 Build it
 
     seacan myapp_seacan.toml
