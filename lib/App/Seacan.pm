@@ -10,7 +10,6 @@ our $VERSION = "0.1.0";
 
 use English qw<-no_match_vars>;
 use Mo qw<required coerce>;
-use File::Path qw<make_path>;
 use TOML qw<from_toml>;
 use Path::Tiny qw<path>;
 
