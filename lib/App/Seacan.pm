@@ -155,7 +155,7 @@ sub create_launcher {
     my $output = $self->config->{seacan}{output};
 
     # The launcher script goes into bin of the target directory
-    my $target_directory = path($output, 'bin')->stringify;
+    my $target_directory = path($output, 'bin');
 
     my $app_name = $self->config->{seacan}{app_name};
     if ( !$app_name ) {
@@ -169,9 +169,8 @@ sub create_launcher {
     # Apps following the CPAN guidelines have a lib directory with the
     # modules. Adding this to the PERL5LIB allows to run this distributions
     # without installing them.
-    my $launcher = path($target_directory, $app_name)->stringify;
-    make_path($target_directory);
-    my $launcher_path = path($luncher);
+    my $launcher_path = $target_directory->child($app_name);
+    $target_directory->mkpath();
 
     $launcher_path->spew_utf8(
         "#!/bin/bash\n",
