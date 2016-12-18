@@ -16,11 +16,13 @@ use Path::Tiny qw<path>;
 
 has config => (
     required => 1,
-    coerce => sub {
+    coerce   => sub {
         my $c = $_[0];
-        if (!ref($c) && -f $c) {
+
+        if ( !ref($c) && -f $c ) {
             $c = from_toml( path($c)->slurp_utf8 );
         }
+
         $c->{perl}{installed_as} //= "seacan";
 
         return $c;
