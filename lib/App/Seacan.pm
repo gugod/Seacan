@@ -72,7 +72,10 @@ sub install_perl {
     my $self = shift;
 
     my $perlbrew_root_path = $self->seacan_perlbrew_root;
-    make_path( $perlbrew_root_path ) unless -d $perlbrew_root_path;
+
+    # FIXME: Shouldn't this use 'safe' => 0 ?
+    $perlbrew_root_path->is_dir
+        or $perlbrew_root_path->mkpath();
 
     for (keys %ENV) {
         delete $ENV{$_} if /\APERLBREW_/;
