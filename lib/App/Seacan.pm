@@ -1,4 +1,6 @@
 package App::Seacan;
+use strict;
+use warnings;
 
 # Semantic Vesioning: http://semver.org/
 # Not sure if I want to use v-string, but I do want to follow
