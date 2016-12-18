@@ -29,12 +29,12 @@ has config => (
 
 sub seacan_perlbrew_root {
     my $self = shift;
-    return path($self->config->{seacan}{output}, "perlbrew")->stringify;
+    return path($self->config->{seacan}{output}, "perlbrew");
 }
 
 sub seacan_perl {
     my $self = shift;
-    return path( $self->seacan_perlbrew_root, "perls", $self->config->{perl}{installed_as}, "bin", "perl" )->stringify;
+    return $self->seacan_perlbrew_root->child( "perls", $self->config->{perl}{installed_as}, "bin", "perl" )->stringify;
 }
 
 sub perl_is_installed {
@@ -99,7 +99,7 @@ sub install_perl {
 
 sub install_cpan {
     my $self = shift;
-    my $cpanm_command = path( $self->seacan_perlbrew_root, "bin", "cpanm")->stringify;
+    my $cpanm_command = $self->seacan_perlbrew_root->child( "bin", "cpanm")->stringify;
     my $perl_command = $self->seacan_perl;
 
     local $OUTPUT_FIELD_SEPARATOR = q{ };
