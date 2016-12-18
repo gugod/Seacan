@@ -15,7 +15,7 @@ has config => (
     coerce => sub {
         my $c = $_[0];
         if (!ref($c) && -f $c) {
-            open(my $fh, "<:utf8", $c) or die $!;
+            open(my $fh, '<:encoding(UTF-8)', $c) or die $!;
             local $/ = undef;
             $c = from_toml( scalar <$fh> );
         }
@@ -147,7 +147,7 @@ sub create_launcher {
     # without installing them.
     my $launcher = path($target_directory, $app_name)->stringify;
     make_path($target_directory);
-    open(my $fh, ">:utf8", $launcher) or die $!;
+    open(my $fh, '>:encoding(UTF-8)', $launcher) or die $!;
     print $fh "#!/bin/bash\n";
     print $fh 'CURRDIR=$(dirname $(readlink -f $0))', "\n";
     print $fh "PERL5LIB=\$CURRDIR/../local/lib/perl5:\$CURRDIR/../app/$app_name/lib\n";
