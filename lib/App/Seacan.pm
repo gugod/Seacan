@@ -34,7 +34,7 @@ sub seacan_perlbrew_root {
 
 sub seacan_perl {
     my $self = shift;
-    return $self->seacan_perlbrew_root->child( "perls", $self->config->{perl}{installed_as}, "bin", "perl" )->stringify;
+    return $self->seacan_perlbrew_root->child( "perls", $self->config->{perl}{installed_as}, "bin", "perl" );
 }
 
 sub perl_is_installed {
