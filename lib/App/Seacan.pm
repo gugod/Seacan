@@ -39,9 +39,10 @@ sub seacan_perl {
 
 sub perl_is_installed {
     my $self = shift;
-    my $perlbrew_root_path = path($self->config->{seacan}{output}, "perlbrew")->stringify;
-    return 0 unless -d $perlbrew_root_path;
-    my $perl_executable = path($perlbrew_root_path, "perls", $self->config->{perl}{installed_as}, "bin", "perl")->stringify;
+    my $perlbrew_root_path = path($self->config->{seacan}{output}, "perlbrew");
+    $perlbrew_root_path->is_dir
+        or return 0;
+    my $perl_executable = $perlbrew_root_path->child( "perls", $self->config->{perl}{installed_as}, "bin", "perl" )->stringify;
     if (my $r = -f $perl_executable) {
         say STDERR "perl is installed: $perl_executable";
         return 1;
