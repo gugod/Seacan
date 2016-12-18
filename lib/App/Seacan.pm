@@ -88,7 +88,7 @@ sub install_perl {
     $ENV{PERLBREW_ROOT} = $perlbrew_root_path;
 
     system("curl -L https://install.perlbrew.pl | bash") == 0 or die $!;
-    my $perlbrew_command = path($perlbrew_root_path, "bin", "perlbrew")->stringify;
+    my $perlbrew_command = path($perlbrew_root_path, "bin", "perlbrew");
 
     my @perl_install_cmd = (
         $perlbrew_command,
