@@ -1,6 +1,7 @@
 package App::Seacan;
 use strict;
 use warnings;
+use constant { 'EXEC_MODE' => '0755' };
 
 # Semantic Vesioning: http://semver.org/
 # Not sure if I want to use v-string, but I do want to follow
@@ -148,16 +149,20 @@ sub create_launcher {
     # without installing them.
     my $launcher = path($target_directory, $app_name)->stringify;
     make_path($target_directory);
-    open(my $fh, '>:encoding(UTF-8)', $launcher) or die $!;
-    print $fh "#!/bin/bash\n";
-    print $fh 'CURRDIR=$(dirname $(readlink -f $0))', "\n";
-    print $fh "PERL5LIB=\$CURRDIR/../local/lib/perl5:\$CURRDIR/../app/$app_name/lib\n";
-    print $fh "export PERL5LIB\n";
-    # String "app" shouldn't be hardcoded and be part of the config
-    # app.pl will not be the likely name of the main script.
-    print $fh "\$CURRDIR/../perlbrew/perls/seacan/bin/perl \$CURRDIR/../app/$app_name/bin/$app_name \$@\n";
-    close $fh or die($!);
-    chmod(0755, $launcher) or die($!);
+    my $launcher_path = path($luncher);
+
+    $launcher_path->spew_utf8(
+        "#!/bin/bash\n",
+        'CURRDIR=$(dirname $(readlink -f $0))' . "\n",
+        "PERL5LIB=\$CURRDIR/../local/lib/perl5:\$CURRDIR/../app/$app_name/lib\n",
+        "export PERL5LIB\n",
+
+        # String "app" shouldn't be hardcoded and be part of the config
+        # app.pl will not be the likely name of the main script.
+        "\$CURRDIR/../perlbrew/perls/seacan/bin/perl \$CURRDIR/../app/$app_name/bin/$app_name \$@\n",
+    );
+
+    $launcher_path->chmod( EXEC_MODE() );
 }
 
 sub run {
