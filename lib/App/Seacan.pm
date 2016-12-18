@@ -99,7 +99,7 @@ sub install_perl {
 
 sub install_cpan {
     my $self = shift;
-    my $cpanm_command = $self->seacan_perlbrew_root->child( "bin", "cpanm")->stringify;
+    my $cpanm_command = $self->seacan_perlbrew_root->child( "bin", "cpanm");
     my $perl_command = $self->seacan_perl;
 
     local $OUTPUT_FIELD_SEPARATOR = q{ };
