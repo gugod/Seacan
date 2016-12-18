@@ -8,8 +8,7 @@ our $VERSION = "0.1.0";
 use Mo qw<required coerce>;
 use File::Path qw<make_path>;
 use TOML qw<from_toml>;
-
-sub join_path { join "/", @_ };
+use Path::Tiny qw<path>;
 
 has config => (
     required => 1,
@@ -28,19 +27,19 @@ has config => (
 
 sub seacan_perlbrew_root {
     my $self = shift;
-    return join_path($self->config->{seacan}{output}, "perlbrew");
+    return path($self->config->{seacan}{output}, "perlbrew")->stringify;
 }
 
 sub seacan_perl {
     my $self = shift;
-    return join_path( $self->seacan_perlbrew_root, "perls", $self->config->{perl}{installed_as}, "bin", "perl" );
+    return path( $self->seacan_perlbrew_root, "perls", $self->config->{perl}{installed_as}, "bin", "perl" )->stringify;
 }
 
 sub perl_is_installed {
     my $self = shift;
-    my $perlbrew_root_path = join_path($self->config->{seacan}{output}, "perlbrew");
+    my $perlbrew_root_path = path($self->config->{seacan}{output}, "perlbrew")->stringify;
     return 0 unless -d $perlbrew_root_path;
-    my $perl_executable = join_path($perlbrew_root_path, "perls", $self->config->{perl}{installed_as}, "bin", "perl");
+    my $perl_executable = path($perlbrew_root_path, "perls", $self->config->{perl}{installed_as}, "bin", "perl")->stringify;
     if (my $r = -f $perl_executable) {
         say STDERR "perl is installed: $perl_executable";
         return 1;
@@ -66,7 +65,7 @@ sub install_perl {
     $ENV{PERLBREW_ROOT} = $perlbrew_root_path;
 
     system("curl -L https://install.perlbrew.pl | bash") == 0 or die $!;
-    my $perlbrew_command = join_path($perlbrew_root_path, "bin", "perlbrew");
+    my $perlbrew_command = path($perlbrew_root_path, "bin", "perlbrew")->stringify;
 
     my @perl_install_cmd = (
         $perlbrew_command,
@@ -98,16 +97,16 @@ sub install_perl {
 
 sub install_cpan {
     my $self = shift;
-    my $cpanm_command = join_path( $self->seacan_perlbrew_root, "bin", "cpanm");
+    my $cpanm_command = path( $self->seacan_perlbrew_root, "bin", "cpanm")->stringify;
     my $perl_command = $self->seacan_perl;
 
     $, = " ";
-    system($perl_command, $cpanm_command, "--notest", "-L", join_path($self->config->{seacan}{output}, "local"), "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
+    system($perl_command, $cpanm_command, "--notest", "-L", path($self->config->{seacan}{output}, "local")->stringify, "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
 }
 
 sub copy_app {
     my $self = shift;
-    my $target_directory = join_path($self->config->{seacan}{output}, "app", $self->config->{seacan}{app_name});
+    my $target_directory = path($self->config->{seacan}{output}, "app", $self->config->{seacan}{app_name})->stringify;
     my $source_directory = $self->config->{seacan}{app};
 
     make_path($target_directory);
@@ -132,7 +131,7 @@ sub create_launcher {
     my $output = $self->config->{seacan}{output};
 
     # The launcher script goes into bin of the target directory
-    my $target_directory = join_path($output, 'bin');
+    my $target_directory = path($output, 'bin')->stringify;
 
     my $app_name = $self->config->{seacan}{app_name};
     if ( !$app_name ) {
@@ -146,7 +145,7 @@ sub create_launcher {
     # Apps following the CPAN guidelines have a lib directory with the
     # modules. Adding this to the PERL5LIB allows to run this distributions
     # without installing them.
-    my $launcher = join_path($target_directory, $app_name);
+    my $launcher = path($target_directory, $app_name)->stringify;
     make_path($target_directory);
     open(my $fh, ">:utf8", $launcher) or die $!;
     print $fh "#!/bin/bash\n";
