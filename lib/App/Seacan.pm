@@ -103,7 +103,7 @@ sub install_cpan {
     my $perl_command = $self->seacan_perl;
 
     local $OUTPUT_FIELD_SEPARATOR = q{ };
-    system($perl_command, $cpanm_command, "--notest", "-L", path($self->config->{seacan}{output}, "local")->stringify, "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
+    system($perl_command, $cpanm_command, "--notest", "-L", path($self->config->{seacan}{output}, "local"), "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
 }
 
 sub copy_app {
