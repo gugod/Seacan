@@ -17,9 +17,7 @@ has config => (
     coerce => sub {
         my $c = $_[0];
         if (!ref($c) && -f $c) {
-            open(my $fh, '<:encoding(UTF-8)', $c) or die $!;
-            local $/ = undef;
-            $c = from_toml( scalar <$fh> );
+            $c = from_toml( path($c)->slurp_utf8 );
         }
         $c->{perl}{installed_as} //= "seacan";
 
