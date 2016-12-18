@@ -7,6 +7,7 @@ use warnings;
 # semvar as a convention.
 our $VERSION = "0.1.0";
 
+use English qw<-no_match_vars>;
 use Mo qw<required coerce>;
 use File::Path qw<make_path>;
 use TOML qw<from_toml>;
@@ -100,7 +101,7 @@ sub install_cpan {
     my $cpanm_command = path( $self->seacan_perlbrew_root, "bin", "cpanm")->stringify;
     my $perl_command = $self->seacan_perl;
 
-    $, = " ";
+    local $OUTPUT_FIELD_SEPARATOR = q{ };
     system($perl_command, $cpanm_command, "--notest", "-L", path($self->config->{seacan}{output}, "local")->stringify, "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
 }
 
