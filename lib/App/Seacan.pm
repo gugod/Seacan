@@ -1,25 +1,27 @@
 package App::Seacan;
+use strict;
+use warnings;
+use constant { 'EXEC_MODE' => '0755' };
 
 # Semantic Vesioning: http://semver.org/
 # Not sure if I want to use v-string, but I do want to follow
 # semvar as a convention.
 our $VERSION = "0.1.0";
 
+use English qw<-no_match_vars>;
 use Mo qw<required coerce>;
-use File::Path qw<make_path>;
 use TOML qw<from_toml>;
-
-sub join_path { join "/", @_ };
+use Path::Tiny qw<path>;
 
 has config => (
     required => 1,
-    coerce => sub {
+    coerce   => sub {
         my $c = $_[0];
-        if (!ref($c) && -f $c) {
-            open(my $fh, "<:utf8", $c) or die $!;
-            local $/ = undef;
-            $c = from_toml( scalar <$fh> );
+
+        if ( !ref($c) && -f $c ) {
+            $c = from_toml( path($c)->slurp_utf8 );
         }
+
         $c->{perl}{installed_as} //= "seacan";
 
         return $c;
@@ -28,23 +30,40 @@ has config => (
 
 sub seacan_perlbrew_root {
     my $self = shift;
-    return join_path($self->config->{seacan}{output}, "perlbrew");
+    return path($self->config->{seacan}{output}, "perlbrew");
 }
 
 sub seacan_perl {
     my $self = shift;
-    return join_path( $self->seacan_perlbrew_root, "perls", $self->config->{perl}{installed_as}, "bin", "perl" );
+    return $self->seacan_perlbrew_root->child(
+        'perls',
+        $self->config->{perl}{installed_as},
+        'bin',
+        'perl',
+   );
 }
 
 sub perl_is_installed {
     my $self = shift;
-    my $perlbrew_root_path = join_path($self->config->{seacan}{output}, "perlbrew");
-    return 0 unless -d $perlbrew_root_path;
-    my $perl_executable = join_path($perlbrew_root_path, "perls", $self->config->{perl}{installed_as}, "bin", "perl");
-    if (my $r = -f $perl_executable) {
-        say STDERR "perl is installed: $perl_executable";
+
+    my $perlbrew_root_path
+        = path( $self->config->{seacan}{output}, 'perlbrew' );
+
+    $perlbrew_root_path->is_dir
+        or return 0;
+
+    my $perl_executable = $perlbrew_root_path->child(
+        'perls',
+        $self->config->{perl}{installed_as},
+        'bin',
+        'perl',
+    );
+
+    if ( $perl_executable->is_file ) {
+        print STDERR "perl is installed: $perl_executable\n";
         return 1;
     }
+
     return 0;
 }
 
@@ -52,7 +71,10 @@ sub install_perl {
     my $self = shift;
 
     my $perlbrew_root_path = $self->seacan_perlbrew_root;
-    make_path( $perlbrew_root_path ) unless -d $perlbrew_root_path;
+
+    # FIXME: Shouldn't this use 'safe' => 0 ?
+    $perlbrew_root_path->is_dir
+        or $perlbrew_root_path->mkpath();
 
     for (keys %ENV) {
         delete $ENV{$_} if /\APERLBREW_/;
@@ -66,7 +88,7 @@ sub install_perl {
     $ENV{PERLBREW_ROOT} = $perlbrew_root_path;
 
     system("curl -L https://install.perlbrew.pl | bash") == 0 or die $!;
-    my $perlbrew_command = join_path($perlbrew_root_path, "bin", "perlbrew");
+    my $perlbrew_command = path($perlbrew_root_path, "bin", "perlbrew");
 
     my @perl_install_cmd = (
         $perlbrew_command,
@@ -98,19 +120,19 @@ sub install_perl {
 
 sub install_cpan {
     my $self = shift;
-    my $cpanm_command = join_path( $self->seacan_perlbrew_root, "bin", "cpanm");
+    my $cpanm_command = $self->seacan_perlbrew_root->child( "bin", "cpanm");
     my $perl_command = $self->seacan_perl;
 
-    $, = " ";
-    system($perl_command, $cpanm_command, "--notest", "-L", join_path($self->config->{seacan}{output}, "local"), "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
+    local $OUTPUT_FIELD_SEPARATOR = q{ };
+    system($perl_command, $cpanm_command, "--notest", "-L", path($self->config->{seacan}{output}, "local"), "--installdeps", $self->config->{seacan}{app} ) == 0 or die $!;
 }
 
 sub copy_app {
     my $self = shift;
-    my $target_directory = join_path($self->config->{seacan}{output}, "app", $self->config->{seacan}{app_name});
+    my $target_directory = path($self->config->{seacan}{output}, "app", $self->config->{seacan}{app_name});
     my $source_directory = $self->config->{seacan}{app};
 
-    make_path($target_directory);
+    $target_directory->mkpath();
 
     unless ( $source_directory =~ m{/$} ) {
         # this is telling rsync to copy the contents of $source_directory
@@ -132,7 +154,7 @@ sub create_launcher {
     my $output = $self->config->{seacan}{output};
 
     # The launcher script goes into bin of the target directory
-    my $target_directory = join_path($output, 'bin');
+    my $target_directory = path($output, 'bin');
 
     my $app_name = $self->config->{seacan}{app_name};
     if ( !$app_name ) {
@@ -146,18 +168,21 @@ sub create_launcher {
     # Apps following the CPAN guidelines have a lib directory with the
     # modules. Adding this to the PERL5LIB allows to run this distributions
     # without installing them.
-    my $launcher = join_path($target_directory, $app_name);
-    make_path($target_directory);
-    open(my $fh, ">:utf8", $launcher) or die $!;
-    print $fh "#!/bin/bash\n";
-    print $fh 'CURRDIR=$(dirname $(readlink -f $0))', "\n";
-    print $fh "PERL5LIB=\$CURRDIR/../local/lib/perl5:\$CURRDIR/../app/$app_name/lib\n";
-    print $fh "export PERL5LIB\n";
-    # String "app" shouldn't be hardcoded and be part of the config
-    # app.pl will not be the likely name of the main script.
-    print $fh "\$CURRDIR/../perlbrew/perls/seacan/bin/perl \$CURRDIR/../app/$app_name/bin/$app_name \$@\n";
-    close $fh or die($!);
-    chmod(0755, $launcher) or die($!);
+    my $launcher_path = $target_directory->child($app_name);
+    $target_directory->mkpath();
+
+    $launcher_path->spew_utf8(
+        "#!/bin/bash\n",
+        'CURRDIR=$(dirname $(readlink -f $0))' . "\n",
+        "PERL5LIB=\$CURRDIR/../local/lib/perl5:\$CURRDIR/../app/$app_name/lib\n",
+        "export PERL5LIB\n",
+
+        # String "app" shouldn't be hardcoded and be part of the config
+        # app.pl will not be the likely name of the main script.
+        "\$CURRDIR/../perlbrew/perls/seacan/bin/perl \$CURRDIR/../app/$app_name/bin/$app_name \$@\n",
+    );
+
+    $launcher_path->chmod( EXEC_MODE() );
 }
 
 sub run {
