@@ -201,13 +201,46 @@ sub run {
 
 Seacan - A tool to prepare a self-contained app directory.
 
-=head1 DESCRIPTION
+=head1 USAGE
 
-Read the README file for now. L<https://github.com/gugod/Seacan/blob/master/README.md>
+Let's say I want to make a distribution for my app named "CoffeeChair".
 
-=head1 COPYRIGHT
+First, prepare a configuration file in TOML format, named C<coffeechair_seacan.toml>
 
-Copyright (c) 2016 Kang-min Liu C<< <gugod@gugod.org> >>.
+    [seacan]
+    output = "/opt/CoffeeChair"
+    app = "/src/CoffeeChair"
+    app_name = "CoffeeChair.pl"
+    
+    [perl]
+    version = "5.20.0"
+    configure_args = "-Dusethreads"
+
+Noted that The source code of the CoffeeChair must be placed at C<"/src/CoffeeChair"> first.
+
+Now, build the the distribution with this, the output directory
+C</opt/CoffeeChair> will be filled by this process:
+
+    seacan coffeechair_seacan.toml
+
+Here's how the directyr looks like:
+
+    - /opt/CoffeeChair
+      - perlbrew/perls/seacan-perl
+      - local/
+      - app/CoffeeChair
+
+Afterwards, invoking commands like this:
+
+    PERL5LIB=/opt/Coffeechair/local/lib/perl5 /opt/CoffeeChair/perlbrew/perls/seacan-perl/bin/perl /opt/CoffeeChair/app/CoffeeChair/bin/app.pl
+
+Or alternatively, a launcher script with the that command can be found at:
+
+     /opt/CoffeeChair/bin/CoffeeChair
+
+=head1 AUTHORS
+
+Kang-min Liu C<< <gugod@gugod.org> >>
 
 =head1 LICENCE
 
